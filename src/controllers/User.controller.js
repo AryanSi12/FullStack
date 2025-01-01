@@ -61,14 +61,14 @@ const registerUser = asyncHandler(async(req,res)=>{
         username: username.toLowerCase()
     })
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
+        " -refreshToken"
     )
     if(!createdUser)throw new ApiError(500,"Some error occured while registration!!");
     return res.status(201).json(
         new ApiResponse(200, createdUser, "User registered Successfully")
     );
-})
-
+}) 
+  
 //Login
 const loginUser = asyncHandler(async(req,res)=> {
     const {username, email , password}=req.body;
@@ -95,7 +95,7 @@ const loginUser = asyncHandler(async(req,res)=> {
     const options = {
         httpOnly: true,
         secure: true
-    }
+    }   
     return res
     .status(200)
     .cookie("accessToken",accessToken,options)
@@ -292,7 +292,16 @@ const getUserProfile = asyncHandler(async (req,res) => {
                     }
                 }
             }
-        },       
+        },
+        {
+            $lookup : {
+                from : "videos",
+                localField : "_id",
+                foreignField : "owner",
+                as : "videosUploaded"
+            }
+        },  
+             
         {
             $project : {
                 fullname: 1,
@@ -302,7 +311,8 @@ const getUserProfile = asyncHandler(async (req,res) => {
                 isSubscribedTo: 1,
                 avatar: 1,
                 coverImage: 1,
-                email: 1 
+                email: 1,
+                videosUploaded : 1, 
             }
         }    
     ])

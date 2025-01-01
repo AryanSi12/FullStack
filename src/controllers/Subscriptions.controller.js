@@ -36,6 +36,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const {channelId} = req.params
+    
     if(!channelId)throw new ApiError(400,"channel id not provided")     
         const channelSubscribers = await User.aggregate([
         {
@@ -69,7 +70,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         console.log(channelSubscribers);         
         
         res.status(200).json({
-            subscribers: channelSubscribers.map(sub => sub.subscriberDetails),
+            subscribers: channelSubscribers.map(sub => sub),
             count: channelSubscribers.length
         });              
 })
@@ -79,40 +80,31 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { subscriberId } = req.params 
      
     if(!subscriberId)throw new ApiError(400,"subscriber id not provided")
-    const subscribedChannels = await User.aggregate([
+    const subscribedChannels = await Subscription.aggregate([
         {
             $match : {
-                _id : new mongoose.Types.ObjectId(subscriberId)
+                subscriber : new mongoose.Types.ObjectId(subscriberId)
             }
         },
         {
             $lookup : {
-                from : "subscriptions",   
-                localField : "_id",
-                foreignField : "subscriber",        
+                from : "users",   
+                localField : "channel",
+                foreignField : "_id",        
                 as : "channelDetails"     
             }
         },
         { $unwind: "$channelDetails" },
-        { 
-            $project: {
-                _id: 0,
-                "channelDetails._id": 1,
-                "channelDetails.username": 1,
-                "channelDetails.fullname": 1,
-                "channelDetails.avatar": 1
-            }
-        }
+      
     ])
     if(!subscribedChannels)throw new ApiError(400,"Enter valid id") 
-    console.log(subscribedChannels.channelDetails);
+    console.log(subscribedChannels);
 
-
+ 
      
-    res.status(200).json({
-        subscribedChannels: subscribedChannels.map(sub => sub.channelDetails),
-        count: subscribedChannels.length
-    });
+    return res
+    .status(200)
+    .json(new ApiResponse(200,subscribedChannels,"subscribed channel fetched successfully"))
 })
 
 export {
